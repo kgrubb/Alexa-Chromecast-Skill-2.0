@@ -1,13 +1,12 @@
 
 from __future__ import print_function
-import pymysql
 import urllib
 import urllib2
-from bs4 import BeautifulSoup
 import json
+from dist.pymysql import pymysql
+from dist.bs4 import BeautifulSoup
 
 def lambda_handler(event, context):
-
     """ Route the incoming request based on type (LaunchRequest, IntentRequest,
     etc.) The JSON body of the request is provided in the event parameter.
     """
@@ -25,13 +24,11 @@ def lambda_handler(event, context):
     elif event['request']['type'] == "SessionEndedRequest":
         return on_session_ended(event['request'], event['session'])
 
-
 def on_session_started(session_started_request, session):
     """ Called when the session starts """
 
     print("on_session_started requestId=" + session_started_request['requestId']
           + ", sessionId=" + session['sessionId'])
-
 
 def on_launch(launch_request, session):
     """ Called when the user launches the skill without specifying what they
@@ -42,7 +39,6 @@ def on_launch(launch_request, session):
           ", sessionId=" + session['sessionId'])
     # Get's the help section
     return get_welcome_response()
-
 
 def on_intent(intent_request, session):
     """ Called when the user specifies an intent for this skill """
@@ -69,7 +65,6 @@ def on_intent(intent_request, session):
     else:
         raise ValueError("Invalid intent")
 
-
 def on_session_ended(session_ended_request, session):
 	#When the User decides to end the session, this is the function that is called.
     print("on_session_ended requestId=" + session_ended_request['requestId'] +
@@ -77,18 +72,15 @@ def on_session_ended(session_ended_request, session):
     # add cleanup logic here
 
 # --------------- Functions that control the skill's behavior ------------------
-
-
 def get_welcome_response():
-	""" Helps the User Find out what they can say, and how to use
-		the program, Sends a Card with that data as well"""
-    session_attributes = {}
-    card_title = "Chromecast"
-    speech_output = "I can control your Chromecast, " \
+	""" Helps the User Find out what they can say, and how to use the program, Sends a Card with that data as well"""
+        session_attributes = {}
+        card_title = "Chromecast"
+        speech_output = "I can control your Chromecast, " \
                     "Tell me a video name, or to pause, resume, or turn the volume to numbers 1 through 100"
-    reprompt_text = "Please tell me a video name to look up, or say a command."
-    should_end_session = False
-    return build_response(session_attributes, build_speechlet_response(
+        reprompt_text = "Please tell me a video name to look up, or say a command."
+        should_end_session = False
+        return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, reprompt_text, should_end_session))
 
 
@@ -129,7 +121,7 @@ def sendVideo(intent, session):
     title = data['items'][0]['snippet']['title'];
     if title == "":
         title = "Video"
-    
+
     speech_output = title + " was added successfully"
     card_title = "ChromeCast - Video Added"
     should_end_session = True
@@ -138,7 +130,9 @@ def sendVideo(intent, session):
     """ Attempts to send the command to the database, if it can't, returns
     	a 'Please Ensure your Database is Running' Message """
     try:
-    	conn = pymysql.connect("RASP_PI_DNS", user="MYSQL_USER", passwd="MYSQL_PASS", db="DB_NAME", connect_timeout=10)
+        with open('config.json', 'r') as f:
+            data = json.load(f)
+            conn = pymysql.connect("data['server_dns']", user="data['db_user']", passwd="data['db_pwd']", db="data['db_name']", connect_timeout=10)
     except pymysql.err.OperationalError:
     	speech_output = "The Command Could not be Sent,  Please ensure your database is Running."
 	    card_title = "ChromeCast - Command Failed"
@@ -165,8 +159,10 @@ def setVolume(intent, session):
     reprompt_text = ""
     #sends the command to the Database
     try:
-    	conn = pymysql.connect("RASP_PI_DNS", user="MYSQL_USER", passwd="MYSQL_PASS", db="DB_NAME", connect_timeout=10)
-    except 
+        with open('config.json', 'r') as f:
+            data = json.load(f)
+            conn = pymysql.connect("data['server_dns']", user="data['db_user']", passwd="data['db_pwd']", db="data['db_name']", connect_timeout=10)
+    except
     	speech_output = title + " was added successfully"
 	    card_title = "ChromeCast - Command Failed"
 	    should_end_session = True
@@ -188,7 +184,9 @@ def pauseVideo(intent, session):
     reprompt_text = ""
     #sends the command to the Database
     try:
-    	conn = pymysql.connect("RASP_PI_DNS", user="MYSQL_USER", passwd="MYSQL_PASS", db="DB_NAME", connect_timeout=10)
+        with open('config.json', 'r') as f:
+            data = json.load(f)
+            conn = pymysql.connect("data['server_dns']", user="data['db_user']", passwd="data['db_pwd']", db="data['db_name']", connect_timeout=10)
     except pymysql.err.OperationalError:
     	speech_output = "The Command Could not be Sent,  Please ensure your database is Running."
 	    card_title = "ChromeCast - Command Failed"
@@ -211,7 +209,9 @@ def resumeVideo(intent, session):
     reprompt_text = ""
     #sends the command to the Database
     try:
-    	conn = pymysql.connect("RASP_PI_DNS", user="MYSQL_USER", passwd="MYSQL_PASS", db="DB_NAME", connect_timeout=10)
+    	with open('config.json', 'r') as f:
+            data = json.load(f)
+            conn = pymysql.connect("data['server_dns']", user="data['db_user']", passwd="data['db_pwd']", db="data['db_name']", connect_timeout=10)
     except pymysql.err.OperationalError:
     	speech_output = "The Command Could not be Sent,  Please ensure your database is Running."
 	    card_title = "ChromeCast - Command Failed"
@@ -228,8 +228,6 @@ def resumeVideo(intent, session):
 	        card_title, speech_output, reprompt_text, should_end_session))
 
 # --------------- Helpers that build all of the responses ----------------------
-
-
 def build_speechlet_response(title, output, reprompt_text, should_end_session):
     if output == None:
         return {
@@ -268,7 +266,6 @@ def build_speechlet_response(title, output, reprompt_text, should_end_session):
             },
             'shouldEndSession': should_end_session
         }
-
 
 def build_response(session_attributes, speechlet_response):
     return {
